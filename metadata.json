@@ -1,0 +1,6 @@
+{
+  "name": "AI Lead Finder",
+  "description": "Find potential business leads and generate AI-powered personalized outreach instantly.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
