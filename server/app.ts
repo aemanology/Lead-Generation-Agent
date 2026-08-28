@@ -4,7 +4,7 @@ import {
   healthHandler,
   searchBusinessesHandler,
   analyzeLeadHandler,
-} from './backendLogic.ts';
+} from './backendLogic';
 
 dotenv.config();
 

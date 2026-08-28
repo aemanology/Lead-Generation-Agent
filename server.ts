@@ -2,13 +2,12 @@ import express from 'express';
 import path from 'path';
 import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
-import app from './server/app.ts';
+import app from './server/app';
 
 dotenv.config();
 
 const PORT = 3000;
 
-// Start Server & Vite Setup
 async function start() {
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
