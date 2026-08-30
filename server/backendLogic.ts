@@ -1,4 +1,5 @@
-import { GoogleGenAI } from '@google/genai';
+/// <reference types="node" />
+import { Buffer } from 'buffer';
 
 export interface CandidateBusiness {
   id: string;
@@ -140,7 +141,7 @@ export const getGeminiClient = () => {
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY is not set in environment variables.');
   }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenerativeAI({ apiKey });
 };
 
 // Social media URL check
