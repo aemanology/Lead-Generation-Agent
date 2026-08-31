@@ -1,5 +1,5 @@
-/// <reference types="node" />
 import { Buffer } from 'buffer';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export interface CandidateBusiness {
   id: string;
@@ -141,7 +141,7 @@ export const getGeminiClient = () => {
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY is not set in environment variables.');
   }
-  return new GoogleGenerativeAI({ apiKey });
+  return new GoogleGenerativeAI({ apiKey } as any);
 };
 
 // Social media URL check
@@ -886,39 +886,28 @@ Analyze this business strictly using the above evidence. Generate sales outreach
 
     let response;
     try {
-      response = await ai.models.generateContent({
-        model: 'gemini-3.7-flash',
-        contents: [
-          { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
-        ],
-        config: {
+      const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      response = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+        generationConfig: {
           responseMimeType: 'application/json',
           temperature: 0.3,
         }
       });
     } catch (modelErr: any) {
-      console.warn('gemini-3.7-flash failed, attempting gemini-3.6-flash fallback:', modelErr?.message || modelErr);
-      try {
-        response = await ai.models.generateContent({
-          model: 'gemini-3.6-flash',
-          contents: [
-            { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
-          ],
-          config: {
-            responseMimeType: 'application/json',
-            temperature: 0.3,
-          }
-        });
-      } catch (fallbackErr) {
-        console.warn('Gemini model calls failed, using fallback analysis:', fallbackErr);
-        return sendResponse(res, 200, {
-          analysis: getEvidenceFallbackAnalysis(business, freelancerService),
-          note: 'Generated using rule-based evidence analysis.'
-        });
-      }
+      console.warn('Gemini model call failed, using fallback analysis:', modelErr?.message || modelErr);
+      return sendResponse(res, 200, {
+        analysis: getEvidenceFallbackAnalysis(business, freelancerService),
+        note: 'Generated using rule-based evidence analysis fallback.'
+      });
     }
 
-    const responseText = response.text || '';
+    let responseText = '';
+    try {
+      responseText = (response as any).text?.() || (response as any).text || '';
+    } catch {
+      responseText = '';
+    }
     
     let analysis;
     try {
