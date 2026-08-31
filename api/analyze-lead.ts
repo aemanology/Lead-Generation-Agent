@@ -2,17 +2,22 @@ import { analyzeLeadHandler } from '../server/backendLogic';
 
 export default async function handler(req: any, res: any) {
   try {
+    console.log('ANALYZE FUNCTION STARTED');
+    console.log('METHOD:', req.method);
+    console.log('GEMINI KEY EXISTS:', !!process.env.GEMINI_API_KEY);
+
     if (req.method === 'OPTIONS') {
-      res.status(200).json({ ok: true });
-      return;
+      return res.status(200).json({ ok: true });
     }
 
-    await analyzeLeadHandler(req, res);
+    return await analyzeLeadHandler(req, res);
   } catch (error: any) {
-    console.error('ANALYZE LEAD CRASH:', error);
+    console.error('ANALYZE FUNCTION CRASH:', error);
 
-    res.status(500).json({
-      error: error?.message || 'Analyze lead function crashed',
+    return res.status(500).json({
+      error: 'Analyze function crashed',
+      message: error?.message || String(error),
+      stack: error?.stack || 'No stack available'
     });
   }
 }
