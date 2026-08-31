@@ -267,7 +267,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({
                         </div>
                       ))
                     ) : (
-                      <p>{analysis.identifiedProblems || analysis.possibleProblems}</p>
+                      <p>{Array.isArray(analysis.identifiedProblems) ? analysis.identifiedProblems.join(', ') : analysis.identifiedProblems}</p>
                     )}
                   </div>
                 </div>
