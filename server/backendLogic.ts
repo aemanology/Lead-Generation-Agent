@@ -886,7 +886,7 @@ Analyze this business strictly using the above evidence. Generate sales outreach
 
     let response;
     try {
-      const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
       response = await model.generateContent({
         contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
         generationConfig: {
