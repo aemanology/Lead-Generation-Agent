@@ -380,7 +380,7 @@ export default function App() {
   const savedIdsSet = new Set(savedLeads.map((s) => s.business.id));
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-slate-950 text-slate-100 dark' : 'bg-slate-950 text-slate-100'} flex font-sans antialiased selection:bg-indigo-500 selection:text-white relative overflow-hidden`}>
+    <div className={`min-h-screen ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-white text-slate-900'} flex ...`}>
       {/* Background Ambient Glow Effects */}
       <div className="fixed top-0 left-1/4 -z-10 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
       <div className="fixed bottom-0 right-1/4 -z-10 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
