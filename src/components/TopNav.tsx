@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Sparkles, LogIn, LogOut, Moon, Sun, ShieldCheck } from 'lucide-react';
+import { Menu, LogIn, LogOut, Moon, Sun } from 'lucide-react';
 import { UserProfile } from '../types';
 
 interface TopNavProps {
@@ -26,7 +26,7 @@ export const TopNav: React.FC<TopNavProps> = ({
       case 'dashboard':
         return {
           title: 'Find Business Leads',
-          subtitle: 'Search targeted prospects and generate personalized cold emails with Gemini AI.',
+          subtitle: 'Search targeted prospects and generate personalized outreach pitches.',
         };
       case 'saved':
         return {
@@ -49,43 +49,48 @@ export const TopNav: React.FC<TopNavProps> = ({
   const { title, subtitle } = getTabTitle();
 
   return (
-    <header className="sticky top-0 z-30 bg-slate-900/80 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-6 py-4 flex items-center justify-between">
+    <header className="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 px-4 sm:px-6 py-4 flex items-center justify-between transition-colors duration-200">
       <div className="flex items-center gap-3">
         <button
           onClick={onOpenMobileMenu}
-          className="lg:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+          className="lg:hidden p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           aria-label="Open menu"
         >
           <Menu className="w-5 h-5" />
         </button>
 
         <div>
-          <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             {title}
           </h1>
-          <p className="text-xs text-slate-400 hidden sm:block">{subtitle}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">{subtitle}</p>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Gemini AI Status Pill */}
-        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-950/60 border border-indigo-800/50 text-indigo-300 text-xs font-medium">
-          <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
-          <span>Gemini 2.5 AI Active</span>
-        </div>
-
         {/* Theme Toggle Button */}
         <button
           onClick={() => setDarkMode(!darkMode)}
-          className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800 transition-colors"
+          className="p-2 rounded-xl text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/80 transition-all flex items-center gap-1.5 text-xs font-semibold shadow-xs"
           title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          aria-label={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
-          {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+          {darkMode ? (
+            <>
+              <Sun className="w-4 h-4 text-amber-400" />
+              <span className="hidden md:inline text-slate-300">Light</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-4 h-4 text-indigo-600" />
+              <span className="hidden md:inline text-slate-700">Dark</span>
+            </>
+          )}
         </button>
 
         {/* User Auth Action */}
         {user ? (
-          <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
+          <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
             {user.photoURL ? (
               <img
                 src={user.photoURL}
@@ -93,16 +98,16 @@ export const TopNav: React.FC<TopNavProps> = ({
                 className="w-8 h-8 rounded-full ring-2 ring-indigo-500/50 object-cover"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 text-white font-bold text-xs flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-xs flex items-center justify-center">
                 {user.displayName?.charAt(0) || 'U'}
               </div>
             )}
-            <span className="text-xs font-medium text-slate-200 hidden md:block max-w-[120px] truncate">
+            <span className="text-xs font-medium text-slate-700 dark:text-slate-200 hidden md:block max-w-[120px] truncate">
               {user.displayName || 'Freelance Pro'}
             </span>
             <button
               onClick={onLogout}
-              className="p-2 text-slate-400 hover:text-rose-300 hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-2 text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />

@@ -4,6 +4,32 @@ export type LeadClassification =
   | 'Low Opportunity'
   | 'Not a Lead';
 
+export type LeadSource = 'serp' | 'instagram' | 'both' | 'serp_api' | 'serp_discovery_engine';
+
+export type DiscoverySourceFilter = 'all' | 'serp' | 'instagram';
+
+export type EntityType =
+  | 'Actual business'
+  | 'Business directory'
+  | 'Restaurant/booking marketplace'
+  | 'Review website'
+  | 'Guide/listicle'
+  | 'News/article/blog'
+  | 'Marketplace'
+  | 'SaaS/software provider'
+  | 'Agency/service provider'
+  | 'Search/aggregator platform'
+  | 'Other non-business result';
+
+export interface RejectedItem {
+  id: string;
+  title: string;
+  url?: string;
+  entityType: EntityType;
+  reason: string;
+  confidence: number;
+}
+
 export interface WebsiteCheckResult {
   hasWebsite: boolean;
   websiteUrl?: string;
@@ -30,11 +56,22 @@ export interface BusinessLead {
   snippet?: string;
   searchTitle?: string;
   searchRank?: number;
-  source?: 'serp_api' | 'serp_discovery_engine';
-  whyFoundReason: string; // e.g. "No website detected", "Social-only presence", "Website appears outdated", "No online booking detected", "Potential automation opportunity"
+  source?: LeadSource;
+  // Instagram specific metadata
+  instagramUsername?: string;
+  instagramUrl?: string;
+  instagramPostUrl?: string;
+  isShoutoutDiscovered?: boolean;
+  shoutoutSourceAccount?: string;
+  serpUrl?: string;
+  whyFoundReason: string; // e.g. "No website detected", "Instagram-only presence", "New business shoutout", etc.
   websiteCheck?: WebsiteCheckResult;
   evidence: string[];
   preQualification: LeadClassification;
+  // Entity Validation & Verification
+  entityType?: EntityType;
+  businessIdentityConfidence?: number; // 0-100%
+  verificationSignals?: string[];
 }
 
 export interface AIAnalysis {
@@ -76,6 +113,7 @@ export interface SearchQueryRecord {
   location: string;
   freelancerService: string;
   numberOfLeads: number;
+  discoverySource?: DiscoverySourceFilter;
   resultsCount: number;
   timestamp: string; // ISO string
 }
@@ -89,7 +127,7 @@ export interface UserProfile {
 }
 
 export interface ApiStatus {
-  hasGeminiKey: boolean;
+  hasOpenRouterKey: boolean;
   hasSerpKey: boolean;
   serpSource: 'live_serp_api' | 'serp_discovery_engine';
 }

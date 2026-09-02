@@ -15,30 +15,30 @@ export const SearchHistory: React.FC<SearchHistoryProps> = ({
 }) => {
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex items-center justify-between">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm dark:shadow-lg flex items-center justify-between transition-colors">
         <div>
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <History className="w-5 h-5 text-indigo-400" />
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <History className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             Search History Log
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             View past client search parameters and re-run lead extraction in one click.
           </p>
         </div>
 
-        <span className="text-xs px-3 py-1 rounded-full bg-slate-800 text-indigo-300 font-semibold border border-slate-700">
+        <span className="text-xs px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 font-semibold border border-slate-200 dark:border-slate-700">
           {history.length} Saved Searches
         </span>
       </div>
 
       {history.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto text-slate-400">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-12 text-center space-y-4 shadow-sm">
+          <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center mx-auto text-slate-400 dark:text-slate-500">
             <History className="w-8 h-8" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-white">No Search History Yet</h3>
-            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">No Search History Yet</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
               Whenever you search for business leads on the dashboard, your query parameters and results count will appear here.
             </p>
           </div>
@@ -48,32 +48,32 @@ export const SearchHistory: React.FC<SearchHistoryProps> = ({
           {history.map((record) => (
             <div
               key={record.id}
-              className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-slate-700 transition-all"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm dark:shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
             >
               <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold text-white bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700 flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="text-xs font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                     {record.businessType}
                   </span>
 
-                  <span className="text-xs font-medium text-slate-300 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                     {record.location}
                   </span>
 
-                  <span className="text-xs font-medium text-slate-300 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800 flex items-center gap-1.5">
-                    <Briefcase className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                     {record.freelancerService}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-4 text-xs text-slate-400">
+                <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5" />
                     {new Date(record.timestamp).toLocaleString()}
                   </span>
-                  <span className="flex items-center gap-1 text-indigo-300 font-semibold">
+                  <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-300 font-semibold">
                     <Hash className="w-3.5 h-3.5" />
                     {record.resultsCount} leads generated
                   </span>
@@ -91,7 +91,7 @@ export const SearchHistory: React.FC<SearchHistoryProps> = ({
 
                 <button
                   onClick={() => onDeleteHistoryItem(record.id)}
-                  className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-950/40 rounded-xl transition-colors"
+                  className="p-2 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors"
                   title="Delete from history"
                 >
                   <Trash2 className="w-4 h-4" />

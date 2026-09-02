@@ -15,7 +15,8 @@ import {
   UserProfile,
   BusinessLead,
   AIAnalysis,
-  ApiStatus
+  ApiStatus,
+  RejectedItem
 } from './types';
 import {
   subscribeToAuthChanges,
@@ -28,12 +29,22 @@ import {
   getSearchHistory,
   deleteSearchHistoryItem
 } from './lib/firebase';
-import { RefreshCw, Sparkles, Filter, AlertCircle, Search, Info, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { RefreshCw, Sparkles, Filter, AlertCircle, Search, Info, ShieldCheck, CheckCircle2, ShieldAlert, ChevronDown, ChevronUp, Ban, ExternalLink } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'saved' | 'history' | 'settings'>('dashboard');
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [darkMode, setDarkMode] = useState<boolean>(true);
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    try {
+      const savedTheme = localStorage.getItem('app_theme');
+      if (savedTheme) {
+        return savedTheme === 'dark';
+      }
+      return false; // Default to light mode or respect user choice
+    } catch {
+      return false;
+    }
+  });
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
 
   // Leads & History State
@@ -45,15 +56,19 @@ export default function App() {
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [showRejectedLog, setShowRejectedLog] = useState<boolean>(false);
+  const [rejectedList, setRejectedList] = useState<RejectedItem[]>([]);
   const [searchStats, setSearchStats] = useState<{
     totalCandidates?: number;
     qualifiedCount?: number;
+    verifiedActualCount?: number;
+    rejectedCount?: number;
     source?: string;
   } | null>(null);
 
   // API Key Status
   const [apiStatus, setApiStatus] = useState<ApiStatus>({
-    hasGeminiKey: true,
+    hasOpenRouterKey: true,
     hasSerpKey: false,
     serpSource: 'serp_discovery_engine',
   });
@@ -61,8 +76,13 @@ export default function App() {
   // Filter & Search active options
   const [activeService, setActiveService] = useState<string>('Web Development');
 
-  // Sync Dark Mode class with root HTML element
+  // Sync Dark Mode class with root HTML element & localStorage
   useEffect(() => {
+    try {
+      localStorage.setItem('app_theme', darkMode ? 'dark' : 'light');
+    } catch {
+      // Ignored
+    }
     if (darkMode) {
       document.documentElement.classList.add('dark');
     } else {
@@ -76,7 +96,7 @@ export default function App() {
       .then((res) => res.json())
       .then((data) => {
         setApiStatus({
-          hasGeminiKey: data.hasGeminiKey ?? true,
+          hasOpenRouterKey: data.hasOpenRouterKey ?? true,
           hasSerpKey: data.hasSerpKey ?? false,
           serpSource: data.serpSource ?? 'serp_discovery_engine',
         });
@@ -156,6 +176,7 @@ export default function App() {
     location: string;
     freelancerService: string;
     numberOfLeads: number;
+    discoverySource?: 'all' | 'serp' | 'instagram';
   }) => {
     setIsSearching(true);
     setSearchError(null);
@@ -165,24 +186,47 @@ export default function App() {
       const res = await fetch('/api/search-businesses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
+        body: JSON.stringify({
+          businessType: params.businessType,
+          location: params.location,
+          freelancerService: params.freelancerService,
+          numberOfLeads: params.numberOfLeads,
+          discoverySource: params.discoverySource || 'all',
+        }),
       });
 
       if (!res.ok) {
-        throw new Error('Business search request failed.');
+        let errorMessage = 'Business search request failed.';
+        try {
+          const errData = await res.json();
+          if (errData?.error) {
+            errorMessage = errData.error;
+          }
+        } catch {
+          // Fallback to default
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await res.json();
       const rawLeads: BusinessLead[] = data.leads || [];
+      const rejectedItems: RejectedItem[] = data.rejectedLog || [];
 
+      setRejectedList(rejectedItems);
       setSearchStats({
-        totalCandidates: data.totalCandidatesAnalyzed || rawLeads.length * 2,
+        totalCandidates: data.totalCandidatesAnalyzed || rawLeads.length + (data.rejectedCount || 0),
         qualifiedCount: data.qualifiedCount || rawLeads.length,
-        source: data.source || 'serp_api',
+        verifiedActualCount: data.verifiedActualCount || rawLeads.length,
+        rejectedCount: data.rejectedCount || (data.rejectedLog ? data.rejectedLog.length : 0),
+        source: data.source || 'all',
       });
 
       if (rawLeads.length === 0) {
-        addToast('info', 'No qualified opportunity leads found matching this query. Try a different category or location.');
+        if (data.rejectedCount && data.rejectedCount > 0) {
+          addToast('info', `Filtered out ${data.rejectedCount} non-business entities (directories, aggregators, listicles). No direct commercial businesses matched.`);
+        } else {
+          addToast('info', 'No qualified opportunity leads found matching this query. Try a different category or location.');
+        }
         setLeads([]);
         setIsSearching(false);
         return;
@@ -195,7 +239,7 @@ export default function App() {
       }));
 
       setLeads(initialCombined);
-      addToast('success', `Discovered & qualified ${rawLeads.length} leads. Running Gemini opportunity analysis...`);
+      addToast('success', `Discovered & qualified ${rawLeads.length} leads. Running opportunity analysis...`);
 
       // Save query to search history in Firestore
       if (user) {
@@ -209,7 +253,7 @@ export default function App() {
         setSearchHistory((prev) => [historyRecord, ...prev]);
       }
 
-      // Analyze each lead asynchronously with Gemini API
+      // Analyze each lead asynchronously with OpenRouter API
       for (let i = 0; i < rawLeads.length; i++) {
         const leadItem = rawLeads[i];
         try {
@@ -380,10 +424,10 @@ export default function App() {
   const savedIdsSet = new Set(savedLeads.map((s) => s.business.id));
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-white text-slate-900'} flex ...`}>
+    <div className={`min-h-screen ${darkMode ? 'bg-slate-950 text-slate-100 dark' : 'bg-slate-50 text-slate-900'} flex font-sans antialiased selection:bg-indigo-500 selection:text-white relative overflow-hidden transition-colors duration-200`}>
       {/* Background Ambient Glow Effects */}
-      <div className="fixed top-0 left-1/4 -z-10 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="fixed bottom-0 right-1/4 -z-10 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className={`fixed top-0 left-1/4 -z-10 w-96 h-96 ${darkMode ? 'bg-indigo-600/10' : 'bg-indigo-500/5'} rounded-full blur-3xl pointer-events-none`} />
+      <div className={`fixed bottom-0 right-1/4 -z-10 w-96 h-96 ${darkMode ? 'bg-purple-600/10' : 'bg-purple-500/5'} rounded-full blur-3xl pointer-events-none`} />
 
       {/* Toast Notification Layer */}
       <ToastContainer toasts={toasts} onDismiss={removeToast} />
@@ -418,37 +462,19 @@ export default function App() {
           {/* Dashboard Tab */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
-              {/* SERP API Status Indicator Banner if running without live key */}
-              {!apiStatus.hasSerpKey && (
-                <div className="p-3.5 bg-indigo-950/40 border border-indigo-800/60 rounded-2xl flex items-center justify-between flex-wrap gap-2 text-xs">
-                  <div className="flex items-center gap-2 text-slate-300">
-                    <Info className="w-4 h-4 text-indigo-400 shrink-0" />
-                    <span>
-                      <strong>SERP Discovery Mode:</strong> Running with high-fidelity realistic search &amp; website analysis engine. Add <code className="bg-slate-900 px-1 py-0.5 rounded text-indigo-300 font-mono">SERP_API_KEY</code> in <code className="text-slate-200">.env</code> anytime for live queries.
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setActiveTab('settings')}
-                    className="text-xs px-3 py-1 bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 rounded-lg font-medium border border-indigo-700/50 transition-colors"
-                  >
-                    View Setup Instructions
-                  </button>
-                </div>
-              )}
-
               {/* Search Form Card */}
               <SearchForm onSearch={handleSearch} isLoading={isSearching} />
 
               {/* Search Error Banner */}
               {searchError && (
-                <div className="p-4 bg-rose-950/80 border border-rose-800 rounded-xl text-rose-200 text-xs flex items-center justify-between">
+                <div className="p-4 bg-rose-50 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-800 dark:text-rose-200 text-xs flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                     <span>{searchError}</span>
                   </div>
                   <button
                     onClick={() => setSearchError(null)}
-                    className="text-rose-400 hover:text-white font-bold"
+                    className="text-rose-700 dark:text-rose-400 hover:underline font-bold"
                   >
                     Dismiss
                   </button>
@@ -458,26 +484,74 @@ export default function App() {
               {/* Active Search Results Grid */}
               {leads.length > 0 ? (
                 <div className="space-y-4">
-                  {/* Results Header & Qualification Summary */}
-                  <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+                  {/* Results Header & Summary */}
+                  <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
                     <div>
-                      <h2 className="text-base font-bold text-white flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-indigo-400" />
-                        Qualified Opportunity Leads ({leads.length})
+                      <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        Qualified Leads ({leads.length})
                       </h2>
-                      {searchStats && (
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          Analyzed {searchStats.totalCandidates} raw SERP candidates → filtered out modern/strong websites → returning {leads.length} high-potential prospects.
-                        </p>
-                      )}
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Target Service: <strong className="text-indigo-600 dark:text-indigo-400">{activeService}</strong>
+                        {searchStats && ` • ${searchStats.verifiedActualCount || leads.length} verified businesses`}
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">
-                        Target Service: <strong className="text-indigo-300">{activeService}</strong>
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-semibold flex items-center gap-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        Verified Businesses
                       </span>
                     </div>
                   </div>
+
+                  {/* Quality Filter Accordion */}
+                  {searchStats && (searchStats.rejectedCount || 0) > 0 && (
+                    <div className="border border-slate-200 dark:border-slate-800/80 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
+                      <button
+                        onClick={() => setShowRejectedLog(!showRejectedLog)}
+                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between text-left hover:bg-slate-100 dark:hover:bg-slate-850 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+                          <ShieldAlert className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                          <span>
+                            Filtered out <strong className="text-slate-800 dark:text-slate-200">{searchStats.rejectedCount} non-client listings</strong> (directories, blogs, platforms)
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 shrink-0 ml-2">
+                          <span>{showRejectedLog ? 'Hide' : 'View Excluded'}</span>
+                          {showRejectedLog ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        </div>
+                      </button>
+
+                      {showRejectedLog && rejectedList.length > 0 && (
+                        <div className="p-4 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/40 space-y-2">
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                            The following entries were excluded because they are directories or platforms rather than independent prospective businesses:
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1">
+                            {rejectedList.map((item, rIdx) => (
+                              <div
+                                key={rIdx}
+                                className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs space-y-1 shadow-xs"
+                              >
+                                <div className="flex items-start justify-between gap-1">
+                                  <span className="font-bold text-slate-900 dark:text-white line-clamp-1">{item.title}</span>
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 shrink-0">
+                                    {item.entityType}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-rose-700 dark:text-rose-400 font-medium flex items-center gap-1">
+                                  <Ban className="w-3 h-3 shrink-0" />
+                                  <span className="truncate">{item.reason}</span>
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {leads.map((lead) => (
